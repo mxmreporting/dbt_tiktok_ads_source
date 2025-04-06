@@ -1,4 +1,11 @@
-{{ config(enabled=var('ad_reporting__tiktok_ads_enabled', true)) }}
+{{ config(enabled=var('ad_reporting__tiktok_ads_enabled', true),
+     partition_by={
+      "field": "updated_at", 
+      "data_type": "datetime",
+      "granularity": "day"
+     }
+
+) }}
 
 with base as (
 
@@ -29,7 +36,8 @@ final as (
     select
         source_relation,   
         campaign_id,
-        cast(updated_at as {{ dbt.type_timestamp() }}) as updated_at,
+        --cast(updated_at as {{ dbt.type_timestamp() }}) as updated_at,
+        DATETIME(TIMESTAMP(CAST(updated_at AS {{ dbt.type_timestamp() }})), 'America/New_York') AS updated_at,
         advertiser_id,
         campaign_name,
         campaign_type,
@@ -40,3 +48,4 @@ final as (
 
 select *
 from final
+where DATE(updated_at) >= DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR)

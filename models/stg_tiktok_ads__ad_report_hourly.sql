@@ -1,4 +1,13 @@
-{{ config(enabled=var('ad_reporting__tiktok_ads_enabled', true)) }}
+{{ config(enabled=var('ad_reporting__tiktok_ads_enabled', true),
+     unique_key = ['source_relation','ad_id','stat_time_hour'],
+     partition_by={
+      "field": "stat_time_hour", 
+      "data_type": "datetime",
+      "granularity": "day"
+    }
+
+
+) }}
 
 with base as (
 
@@ -29,7 +38,8 @@ final as (
     select
         source_relation,  
         ad_id, 
-        cast(stat_time_hour as {{ dbt.type_timestamp() }}) as stat_time_hour, 
+        --cast(stat_time_hour as {{ dbt.type_timestamp() }}) as stat_time_hour,
+        DATETIME(TIMESTAMP(CAST(stat_time_hour AS {{ dbt.type_timestamp() }})), 'America/New_York') AS stat_time_hour,
         cpc, 
         cpm, 
         ctr, 
@@ -64,4 +74,5 @@ final as (
 
 select * 
 from final
+where DATE(stat_time_hour) >= DATE_ADD(CURRENT_DATE(), INTERVAL -2 YEAR)
 
